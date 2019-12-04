@@ -1,29 +1,14 @@
 // Renders the sidebar with the list of pokemons in the pokedex
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Link } from "@primer/components";
 import { Spinner } from "@nice-boys/components";
 import Sidebar from "../../components/Sidebar";
 import SidebarItem from "../../components/SidebarItem";
 import SidebarTitle from "../../components/SidebarTitle";
-import { fetchPokemons } from "../../api/pokeapi";
+import { usePokemons } from "../../hooks";
 
 const PokemonList = props => {
-  const [pokemons, setPokemons] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    setLoading(true);
-    fetchPokemons()
-      .then(pokemon => {
-        setPokemons(pokemon);
-        setLoading(false);
-      })
-      .catch(error => {
-        setError(error);
-        setLoading(false);
-      });
-  }, []);
+  const [pokemons, loading, error] = usePokemons();
 
   return (
     <Sidebar>
