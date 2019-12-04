@@ -1,95 +1,91 @@
 // Renders the profile and games of a single pokemon
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Spinner } from "@nice-boys/components";
 import PokemonProfile from "../../components/PokemonProfile";
 import PokemonGamesSection from "../../components/PokemonGamesSection";
 import Column from "../../components/Column";
 import { fetchPokemonGames, fetchPokemonByName } from "../../api/pokeapi";
 
-class PokemonGames extends React.Component {
-  state = {
-    games: null
-  };
+const PokemonGames = props => {
+  const [games, setGames] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  componentDidMount() {
-    this.fetchGames();
-  }
+  useEffect(() => {
+    let cancelled = false;
+    setGames(null);
+    setLoading(true);
 
-  componentDidUpdate(prevProps) {
-    if (
-      (!prevProps.pokemon && this.props.pokemon) ||
-      prevProps.pokemon.name !== this.props.pokemon.name
-    ) {
-      this.fetchGames();
-    }
-  }
+    fetchPokemonGames(props.pokemon.game_indices.map(game => game.version.name))
+      .then(games => {
+        if (cancelled) return;
 
-  fetchGames() {
-    this.setState({
-      games: null
-    });
+        setGames(games);
+        setLoading(false);
+      })
+      .catch(error => {
+        if (cancelled) return;
 
-    if (!this.props.pokemon) return;
-    fetchPokemonGames(
-      this.props.pokemon.game_indices.map(game => game.version.name)
-    ).then(games => {
-      this.setState({
-        games
+        setError(error);
+        setLoading(false);
       });
-    });
-  }
 
-  render() {
-    return !this.state.games ? (
-      <Spinner />
-    ) : (
-      <PokemonGamesSection games={this.state.games} />
-    );
-  }
-}
+    return () => (cancelled = true);
+  }, [props.pokemon]);
 
-class Pokemon extends React.Component {
-  state = {
-    pokemon: null
-  };
+  return loading ? (
+    <Spinner />
+  ) : error ? (
+    <div>{error.message}</div>
+  ) : (
+    games && <PokemonGamesSection games={games} />
+  );
+};
 
-  componentDidMount() {
-    this.fetchPokemon();
-  }
+const Pokemon = props => {
+  const [pokemon, setPokemon] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  componentDidUpdate(prevProps) {
-    if (prevProps.name !== this.props.name) {
-      this.fetchPokemon();
-    }
-  }
+  useEffect(() => {
+    if (!props.name) return;
+    let cancelled = false;
+    setPokemon(null);
+    setLoading(true);
 
-  fetchPokemon() {
-    this.setState({
-      pokemon: null
-    });
+    fetchPokemonByName(props.name)
+      .then(pokemon => {
+        if (cancelled) return;
 
-    if (!this.props.name) return;
-    fetchPokemonByName(this.props.name).then(pokemon => {
-      this.setState({
-        pokemon
+        setPokemon(pokemon);
+        setLoading(false);
+      })
+      .catch(error => {
+        if (cancelled) return;
+
+        setError(error);
+        setLoading(false);
       });
-    });
-  }
 
-  render() {
-    return (
-      <Column width={1} p={4}>
-        {!this.props.name ? null : !this.state.pokemon ? (
-          <Spinner />
-        ) : (
+    return () => (cancelled = true);
+  }, [props.name]);
+
+  return (
+    <Column width={1} p={4}>
+      {loading ? (
+        <Spinner />
+      ) : error ? (
+        <div>{error.message}</div>
+      ) : (
+        pokemon && (
           <>
-            <PokemonProfile pokemon={this.state.pokemon} />
-            <PokemonGames pokemon={this.state.pokemon} />
+            <PokemonProfile pokemon={pokemon} />
+            <PokemonGames pokemon={pokemon} />
           </>
-        )}
-      </Column>
-    );
-  }
-}
+        )
+      )}
+    </Column>
+  );
+};
 
 export default Pokemon;
